@@ -1,0 +1,24 @@
+.controller {
+  display: flex;
+  justify-content: center;
+  gap: 2rem
+}
+
+.controller button {
+  font-size: 1rem;
+  font-weight: 100;
+  border: 1px solid #fff;
+  background-color: transparent;
+  color: #fff;
+  border-radius: 25px;
+  outline: none;
+  padding: .5rem 1.5rem;
+  transition: all 0.5s ease-out;
+  text-transform: lowercase;
+}
+
+.controller button:hover {
+  cursor: pointer;
+  background-color: #fff;
+  color: #000;
+}
