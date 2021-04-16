@@ -1,165 +1,138 @@
-import React, { Component } from "react";
+import { createRef, useState } from "react";
 import Settings from "./Settings";
 import Times from "./Times";
 import Controller from "./Controller";
 import "./App.css";
 
-export default class App extends Component {
-  constructor(props) {
-    super(props);
+const App = ({ defaultBreakLength, defaultSessionLength }) => {
+  const audioBeep = createRef();
 
-    this.audioBeep = React.createRef();
+  const { breakLength, setBreakLength } = useState(
+    Number.parseInt(defaultBreakLength, 10)
+  );
+  const { sessionLength, setSessionLength } = useState(
+    Number.parseInt(defaultSessionLength, 10)
+  );
+  const { timeLabel, setTimeLabel } = useState("Session");
+  const { timeLeftInSecond, setTimeLeftInSecond } = useState(
+    Number.parseInt(defaultSessionLength, 10) * 60
+  );
+  const { isStart, setIsStart } = useState(false);
+  const { timerInterval, setTimerInterval } = useState(null);
 
-    this.state = {
-      breakLength: Number.parseInt(this.props.defaultBreakLength, 10),
-      sessionLength: Number.parseInt(this.props.defaultSessionLength, 10),
-      timeLabel: "Session",
-      timeLeftInSecond:
-        Number.parseInt(this.props.defaultSessionLength, 10) * 60,
-      isStart: false,
-      timerInterval: null,
-    };
+  console.log(Number.parseInt(defaultBreakLength, 10));
+  console.log(Number.parseInt(defaultSessionLength, 10));
 
-    this.onIncreaseBreak = this.onIncreaseBreak.bind(this);
-    this.onDecreaseBreak = this.onDecreaseBreak.bind(this);
-    this.onIncreaseSession = this.onIncreaseSession.bind(this);
-    this.onDecreaseSession = this.onDecreaseSession.bind(this);
-    this.onReset = this.onReset.bind(this);
-    this.onStartStop = this.onStartStop.bind(this);
-    this.decreaseTimer = this.decreaseTimer.bind(this);
-    this.phaseControl = this.phaseControl.bind(this);
-  }
-
-  onIncreaseBreak() {
-    if (this.state.breakLength < 60 && !this.state.isStart) {
-      this.setState({
-        breakLength: this.state.breakLength + 1,
-      });
+  const onIncreaseBreak = () => {
+    if (breakLength < 60 && !isStart) {
+      setBreakLength(breakLength + 1);
     }
-  }
+  };
 
-  onDecreaseBreak() {
-    if (this.state.breakLength > 1 && !this.state.isStart) {
-      this.setState({
-        breakLength: this.state.breakLength - 1,
-      });
+  const onDecreaseBreak = () => {
+    if (breakLength > 1 && !isStart) {
+      setBreakLength(breakLength - 1);
     }
-  }
+  };
 
-  onIncreaseSession() {
-    if (this.state.sessionLength < 60 && !this.state.isStart) {
-      this.setState({
-        sessionLength: this.state.sessionLength + 1,
-        timeLeftInSecond: (this.state.sessionLength + 1) * 60,
-      });
+  const onIncreaseSession = () => {
+    if (sessionLength < 60 && !isStart) {
+      setSessionLength(sessionLength + 1);
+      setTimeLeftInSecond((sessionLength + 1) * 60);
     }
-  }
+  };
 
-  onDecreaseSession() {
-    if (this.state.sessionLength > 1 && !this.state.isStart) {
-      this.setState({
-        sessionLength: this.state.sessionLength - 1,
-        timeLeftInSecond: (this.state.sessionLength - 1) * 60,
-      });
+  const onDecreaseSession = () => {
+    if (sessionLength > 1 && !isStart) {
+      setSessionLength(sessionLength - 1);
+      setTimeLeftInSecond((sessionLength - 1) * 60);
     }
-  }
+  };
 
-  onReset() {
-    this.setState({
-      breakLength: Number.parseInt(this.props.defaultBreakLength, 10),
-      sessionLength: Number.parseInt(this.props.defaultSessionLength, 10),
-      timeLabel: "Session",
-      timeLeftInSecond:
-        Number.parseInt(this.props.defaultSessionLength, 10) * 60,
-      isStart: false,
-      timerInterval: null,
-    });
+  const onReset = () => {
+    setBreakLength(Number.parseInt(defaultBreakLength, 10));
+    setSessionLength(Number.parseInt(defaultSessionLength, 10));
+    setTimeLabel("Session");
+    setTimeLeftInSecond(Number.parseInt(defaultSessionLength, 10) * 60);
+    setIsStart(false);
+    setTimerInterval(null);
+    audioBeep.current.pause();
+    audioBeep.current.currentTime = 0;
+    timerInterval && clearInterval(timerInterval);
+  };
 
-    this.audioBeep.current.pause();
-    this.audioBeep.current.currentTime = 0;
-    this.state.timerInterval && clearInterval(this.state.timerInterval);
-  }
-
-  onStartStop() {
-    if (!this.state.isStart) {
-      this.setState({
-        isStart: !this.state.isStart,
-        timerInterval: setInterval(() => {
-          this.decreaseTimer();
-          this.phaseControl();
-        }, 1000),
-      });
+  const onStartStop = () => {
+    if (!isStart) {
+      setIsStart(!isStart);
+      setTimerInterval(
+        setInterval(() => {
+          decreaseTimer();
+          phaseControl();
+        }, 1000)
+      );
     } else {
-      this.audioBeep.current.pause();
-      this.audioBeep.current.currentTime = 0;
-      this.state.timerInterval && clearInterval(this.state.timerInterval);
-
-      this.setState({
-        isStart: !this.state.isStart,
-        timerInterval: null,
-      });
+      audioBeep.current.pause();
+      audioBeep.current.currentTime = 0;
+      timerInterval && clearInterval(timerInterval);
+      setIsStart(!isStart);
+      setTimerInterval(null);
     }
-  }
+  };
 
-  decreaseTimer() {
-    this.setState({
-      timeLeftInSecond: this.state.timeLeftInSecond - 1,
-    });
-  }
+  const decreaseTimer = () => {
+    setTimerInterval(timeLeftInSecond - 1);
+  };
 
-  phaseControl() {
-    if (this.state.timeLeftInSecond === 0) {
-      this.audioBeep.current.play();
-    } else if (this.state.timeLeftInSecond === -1) {
-      if (this.state.timeLabel === "Session") {
-        this.setState({
-          timeLabel: "Break",
-          timeLeftInSecond: this.state.breakLength * 60,
-        });
+  const phaseControl = () => {
+    if (timeLeftInSecond === 0) {
+      audioBeep.current.play();
+    } else if (timeLeftInSecond === -1) {
+      if (timeLabel === "Session") {
+        setTimeLabel("Break");
+        setTimeLeftInSecond(breakLength * 60);
       } else {
-        this.setState({
-          timeLabel: "Session",
-          timeLeftInSecond: this.state.sessionLength * 60,
-        });
+        setTimeLabel("Session");
+        setTimeLeftInSecond(sessionLength * 60);
       }
     }
-  }
+  };
 
-  render() {
-    return (
-      <div className="pomodoro-clock">
-        <div className="pomodoro-clock-header">
-          <h1 className="pomodoro-clock-header-name">Il Pomodoro</h1>
-        </div>
-
-        <Settings
-          breakLength={this.state.breakLength}
-          sessionLength={this.state.sessionLength}
-          isStart={this.state.isStart}
-          onDecreaseBreak={this.onDecreaseBreak}
-          onDecreaseSession={this.onDecreaseSession}
-          onIncreaseBreak={this.onIncreaseBreak}
-          onIncreaseSession={this.onIncreaseSession}
-        />
-
-        <Times
-          timeLabel={this.state.timeLabel}
-          timeLeftInSecond={this.state.timeLeftInSecond}
-        />
-
-        <Controller
-          onReset={this.onReset}
-          onStartStop={this.onStartStop}
-          isStart={this.state.isStart}
-        />
-
-        <audio
-          id="beep"
-          preload="auto"
-          src="https://goo.gl/65cBl1"
-          ref={this.audioBeep}
-        ></audio>
+  return (
+    <div className="pomodoro-clock">
+      <div className="pomodoro-clock-header">
+        <h1 className="pomodoro-clock-header-name">Il Pomodoro</h1>
       </div>
-    );
-  }
-}
+
+      <Settings
+        breakLength={breakLength}
+        // sessionLength={sessionLength}
+        isStart={isStart}
+        onDecreaseBreak={onDecreaseBreak}
+        onIncreaseBreak={onIncreaseBreak}
+      />
+
+      <Times
+        timeLabel={timeLabel}
+        timeLeftInSecond={timeLeftInSecond}
+        isStart={isStart}
+        onDecreaseSession={onDecreaseSession}
+        onIncreaseSession={onIncreaseSession}
+      />
+
+      <Controller
+        onReset={onReset}
+        onStartStop={onStartStop}
+        isStart={isStart}
+      />
+
+      <audio
+        id="beep"
+        preload="auto"
+        src="https://goo.gl/65cBl1"
+        ref={audioBeep}
+      ></audio>
+    </div>
+  );
+};
+
+export default App;
