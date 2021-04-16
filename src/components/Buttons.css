@@ -1,13 +1,13 @@
-.controller {
+.buttons {
   display: flex;
   justify-content: center;
   gap: 2rem
 }
 
-.controller button {
+.buttons button {
   font-size: 1rem;
   font-weight: 100;
-  border: 1px solid #fff;
+  border: 2px solid #fff;
   background-color: transparent;
   color: #fff;
   border-radius: 25px;
@@ -17,7 +17,7 @@
   text-transform: lowercase;
 }
 
-.controller button:hover {
+.buttons button:hover {
   cursor: pointer;
   background-color: #fff;
   color: #000;

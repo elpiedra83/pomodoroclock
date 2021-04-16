@@ -1,136 +1,109 @@
-import { createRef, useState } from "react";
-import Settings from "./Settings";
+import { useState } from "react";
+import Break from "./Break";
 import Times from "./Times";
-import Controller from "./Controller";
+import Buttons from "./Buttons";
 import "./App.css";
 
-const App = ({ defaultBreakLength, defaultSessionLength }) => {
-  const audioBeep = createRef();
-
-  const { breakLength, setBreakLength } = useState(
-    Number.parseInt(defaultBreakLength, 10)
+const App = () => {
+  const [time, setTime] = useState(25 * 60);
+  const [breakTime, setBreakTime] = useState(5 * 60);
+  const [isStart, setIsStart] = useState(false);
+  const [onBreak, setOnBreak] = useState(false);
+  const [breakAudio, setBreakAudio] = useState(
+    new Audio(
+      "https://assets.mixkit.co/sfx/preview/mixkit-magic-sweep-game-trophy-257.mp3"
+    )
   );
-  const { sessionLength, setSessionLength } = useState(
-    Number.parseInt(defaultSessionLength, 10)
-  );
-  const { timeLabel, setTimeLabel } = useState("Session");
-  const { timeLeftInSecond, setTimeLeftInSecond } = useState(
-    Number.parseInt(defaultSessionLength, 10) * 60
-  );
-  const { isStart, setIsStart } = useState(false);
-  const { timerInterval, setTimerInterval } = useState(null);
 
-  console.log(Number.parseInt(defaultBreakLength, 10));
-  console.log(Number.parseInt(defaultSessionLength, 10));
-
-  const onIncreaseBreak = () => {
-    if (breakLength < 60 && !isStart) {
-      setBreakLength(breakLength + 1);
-    }
+  const formatTime = (time) => {
+    let minutes = Math.floor(time / 60);
+    let seconds = time % 60;
+    return `${minutes < 10 ? "0" + minutes : minutes}:${
+      seconds < 10 ? "0" + seconds : seconds
+    }`;
   };
 
-  const onDecreaseBreak = () => {
-    if (breakLength > 1 && !isStart) {
-      setBreakLength(breakLength - 1);
-    }
+  const playBreakAudio = () => {
+    breakAudio.currentTime = 0;
+    breakAudio.play();
   };
-
-  const onIncreaseSession = () => {
-    if (sessionLength < 60 && !isStart) {
-      setSessionLength(sessionLength + 1);
-      setTimeLeftInSecond((sessionLength + 1) * 60);
-    }
-  };
-
-  const onDecreaseSession = () => {
-    if (sessionLength > 1 && !isStart) {
-      setSessionLength(sessionLength - 1);
-      setTimeLeftInSecond((sessionLength - 1) * 60);
-    }
-  };
-
-  const onReset = () => {
-    setBreakLength(Number.parseInt(defaultBreakLength, 10));
-    setSessionLength(Number.parseInt(defaultSessionLength, 10));
-    setTimeLabel("Session");
-    setTimeLeftInSecond(Number.parseInt(defaultSessionLength, 10) * 60);
-    setIsStart(false);
-    setTimerInterval(null);
-    audioBeep.current.pause();
-    audioBeep.current.currentTime = 0;
-    timerInterval && clearInterval(timerInterval);
-  };
-
-  const onStartStop = () => {
-    if (!isStart) {
-      setIsStart(!isStart);
-      setTimerInterval(
-        setInterval(() => {
-          decreaseTimer();
-          phaseControl();
-        }, 1000)
-      );
+  const changeTime = (minute, type) => {
+    if (type === "break") {
+      if (breakTime <= 60 && minute < 0) return;
+      setBreakTime((prev) => {
+        return prev + minute;
+      });
     } else {
-      audioBeep.current.pause();
-      audioBeep.current.currentTime = 0;
-      timerInterval && clearInterval(timerInterval);
-      setIsStart(!isStart);
-      setTimerInterval(null);
+      if (time <= 60 && minute < 0) return;
+      setTime((prev) => {
+        return prev + minute;
+      });
     }
   };
 
-  const decreaseTimer = () => {
-    setTimerInterval(timeLeftInSecond - 1);
-  };
-
-  const phaseControl = () => {
-    if (timeLeftInSecond === 0) {
-      audioBeep.current.play();
-    } else if (timeLeftInSecond === -1) {
-      if (timeLabel === "Session") {
-        setTimeLabel("Break");
-        setTimeLeftInSecond(breakLength * 60);
-      } else {
-        setTimeLabel("Session");
-        setTimeLeftInSecond(sessionLength * 60);
-      }
+  const timeHandler = () => {
+    let second = 1000;
+    let date = new Date().getTime();
+    let nextDate = new Date().getTime() + second;
+    let onBreakVariable = onBreak;
+    if (!isStart) {
+      let interval = setInterval(() => {
+        date = new Date().getTime();
+        if (date > nextDate) {
+          setTime((prev) => {
+            if (prev <= 0 && !onBreakVariable) {
+              playBreakAudio();
+              onBreakVariable = true;
+              setOnBreak(true);
+              return breakTime;
+            } else if (prev <= 0 && onBreakVariable) {
+              playBreakAudio();
+              onBreakVariable = false;
+              setOnBreak(false);
+              return time;
+            }
+            return prev - 1;
+          });
+          nextDate += second;
+        }
+      }, 30);
+      localStorage.clear();
+      localStorage.setItem("interval-id", interval);
     }
+    if (isStart) {
+      clearInterval(localStorage.getItem("interval-id"));
+    }
+    setIsStart(!isStart);
   };
 
+  const reset = () => {
+    setTime(25 * 60);
+    setBreakTime(5 * 60);
+    setIsStart(false);
+    clearInterval(localStorage.getItem("interval-id"));
+  };
   return (
     <div className="pomodoro-clock">
       <div className="pomodoro-clock-header">
-        <h1 className="pomodoro-clock-header-name">Il Pomodoro</h1>
+        <h1 className="pomodoro-clock-header-name">Il Pomodoro relogio</h1>
       </div>
-
-      <Settings
-        breakLength={breakLength}
-        // sessionLength={sessionLength}
+      <Break
+        title={"break length"}
+        changeTime={changeTime}
+        type={"break"}
+        time={breakTime}
+        formatTime={formatTime}
         isStart={isStart}
-        onDecreaseBreak={onDecreaseBreak}
-        onIncreaseBreak={onIncreaseBreak}
       />
-
       <Times
-        timeLabel={timeLabel}
-        timeLeftInSecond={timeLeftInSecond}
-        isStart={isStart}
-        onDecreaseSession={onDecreaseSession}
-        onIncreaseSession={onIncreaseSession}
-      />
-
-      <Controller
-        onReset={onReset}
-        onStartStop={onStartStop}
+        title={onBreak ? "break" : "session"}
+        changeTime={changeTime}
+        type={"session"}
+        time={time}
+        formatTime={formatTime}
         isStart={isStart}
       />
-
-      <audio
-        id="beep"
-        preload="auto"
-        src="https://goo.gl/65cBl1"
-        ref={audioBeep}
-      ></audio>
+      <Buttons isStart={isStart} reset={reset} timeHandler={timeHandler} />
     </div>
   );
 };
